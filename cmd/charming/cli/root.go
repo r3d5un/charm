@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/r3d5un/charm/cmd/charming/cli/progressbar"
 	"github.com/spf13/cobra"
 )
 
@@ -23,4 +24,5 @@ var rootCmd = &cobra.Command{
 func init() {
 	versionTemplate := `{{printf "%s: %s - version %s\n" .Name .Short .Version}}`
 	rootCmd.SetVersionTemplate(versionTemplate)
+	rootCmd.AddCommand(progressbar.ProgressBarCmd)
 }
