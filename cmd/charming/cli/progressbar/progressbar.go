@@ -43,8 +43,8 @@ type doneMsg struct{}
 type model struct {
 	progress progress.Model
 	done     bool
-	total    int64
-	count    int64
+	total    *int64
+	count    *int64
 }
 
 func (m model) Init() tea.Cmd {
@@ -69,15 +69,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		if m.count >= m.total {
+		if *m.count >= *m.total {
 			m.done = true
 			return m, func() tea.Msg { return doneMsg{} }
 		}
 
-		val := float64(m.count) / float64(m.total)
-		fmt.Println(val)
-
-		cmd := m.progress.SetPercent(float64(m.count) / float64(m.total))
+		cmd := m.progress.SetPercent(float64(*m.count) / float64(*m.total))
 		return m, tea.Batch(tickCmd(), cmd)
 
 	case workDoneMsg:
@@ -112,10 +109,12 @@ func (m model) View() string {
 }
 
 func newModel() model {
+	var total int64 = 10_000
+	var count int64 = 0
 	return model{
 		progress: progress.New(progress.WithDefaultGradient()),
-		total:    1_000,
-		count:    0,
+		total:    &total,
+		count:    &count,
 	}
 }
 
@@ -129,9 +128,8 @@ func doWork(m *model) tea.Cmd {
 			go func() {
 				defer wg.Done()
 				for {
-					current := atomic.AddInt64(&m.count, 1)
-					// fmt.Println(current)
-					if current > m.total {
+					current := atomic.AddInt64(m.count, 1)
+					if current > *m.total {
 						break
 					}
 					// Simulate work
@@ -141,14 +139,14 @@ func doWork(m *model) tea.Cmd {
 		}
 
 		wg.Wait()
-		return workDoneMsg{count: &m.count}
+		return workDoneMsg{count: m.count}
 	}
 }
 
 type tickMsg time.Time
 
 func tickCmd() tea.Cmd {
-	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Millisecond*100, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
